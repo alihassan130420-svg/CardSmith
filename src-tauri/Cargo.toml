@@ -1,6 +1,6 @@
 [package]
 name = "cardsmith"
-version = "0.1.0"
+version = "0.1.1"
 description = "An offline desktop flashcard maker for study files"
 authors = ["CardSmith"]
 edition = "2021"

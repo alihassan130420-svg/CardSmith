@@ -18,6 +18,17 @@ type ProcessingSummary = {
   tags: number | null;
 };
 
+type GenerationSettings = {
+  cardCount: "Auto" | "10" | "25" | "50";
+  difficulty: "Basic" | "Medium" | "Advanced";
+  cardTypes: {
+    definition: boolean;
+    concept: boolean;
+    questionAnswer: boolean;
+    formula: boolean;
+  };
+};
+
 const savedCardsKey = "cardsmith.savedCards";
 const themeStorageKey = "cardsmith.theme";
 
@@ -37,6 +48,17 @@ const appThemes: AppTheme[] = [
   "Reading Mode",
 ];
 
+const defaultGenerationSettings: GenerationSettings = {
+  cardCount: "Auto",
+  difficulty: "Medium",
+  cardTypes: {
+    definition: true,
+    concept: true,
+    questionAnswer: true,
+    formula: true,
+  },
+};
+
 function App() {
   const [currentPage, setCurrentPage] = useState<AppPage>("Library");
   const [importState, setImportState] = useState<ImportState>("idle");
@@ -55,6 +77,8 @@ function App() {
   });
   const [theme, setTheme] = useState<AppTheme>("Calm Study");
   const [appearanceOpen, setAppearanceOpen] = useState(false);
+  const [generationSettings, setGenerationSettings] =
+    useState<GenerationSettings>(defaultGenerationSettings);
 
   useEffect(() => {
     const saved = window.localStorage.getItem(savedCardsKey);
@@ -132,7 +156,7 @@ function App() {
       const result = await invoke<ImportedFile>("import_study_file", {
         path: selectedPath,
       });
-      const cards = buildDraftCards(result);
+      const cards = buildDraftCards(result, generationSettings);
       setProcessingSummary({
         flashcards: cards.length,
         topics: estimateTopics(result.preview),
@@ -205,7 +229,6 @@ function App() {
         <Dashboard
           draftCount={draftCards.length}
           importedFile={importedFile}
-          onGenerate={() => setCurrentPage("Cards")}
           onImport={importFile}
           onReview={() => setCurrentPage("Review")}
           savedCount={savedCards.length}
@@ -216,12 +239,25 @@ function App() {
 
     if (currentPage === "Sources") {
       return (
-        <SourceCard
-          draftCount={draftCards.length}
-          file={importedFile}
-          onGenerate={() => setCurrentPage("Cards")}
-          onImport={importFile}
-        />
+        <div className="sources-workspace">
+          <SourceCard
+            draftCount={draftCards.length}
+            file={importedFile}
+            onGenerate={() => setCurrentPage("Cards")}
+            onImport={importFile}
+          />
+          {importedFile ? (
+            <GenerationSettingsPanel
+              onChange={setGenerationSettings}
+              onGenerate={() => {
+                setDraftCards(buildDraftCards(importedFile, generationSettings));
+                setActiveDraftIndex(0);
+                setCurrentPage("Cards");
+              }}
+              settings={generationSettings}
+            />
+          ) : null}
+        </div>
       );
     }
 
@@ -318,7 +354,6 @@ function Dashboard({
   draftCount,
   savedCount,
   onImport,
-  onGenerate,
   onReview,
 }: {
   importedFile: ImportedFile | null;
@@ -326,7 +361,6 @@ function Dashboard({
   draftCount: number;
   savedCount: number;
   onImport: () => void;
-  onGenerate: () => void;
   onReview: () => void;
 }) {
   const recentSources = importedFile
@@ -343,10 +377,34 @@ function Dashboard({
   return (
     <section className="dashboard">
       <section className="stat-grid" aria-label="Study overview">
-        <DashboardStat label="Sources" value={Math.max(sourceCount, 5)} note="+2 this week" icon="📄" />
-        <DashboardStat label="Total Cards" value={Math.max(savedCount + draftCount, 120)} note="+18 this week" icon="🗂" />
-        <DashboardStat label="Cards Due Today" value={Math.max(savedCount, 12)} note="Keep your streak" icon="🗓" />
-        <DashboardStat label="Study Streak" value={7} note="days in a row" icon="🔥" />
+        <DashboardStat
+          icon="document"
+          label="Sources"
+          note="+2 this week"
+          tone="green"
+          value={Math.max(sourceCount, 5)}
+        />
+        <DashboardStat
+          icon="cards"
+          label="Total Cards"
+          note="+18 this week"
+          tone="blue"
+          value={Math.max(savedCount + draftCount, 120)}
+        />
+        <DashboardStat
+          icon="calendar"
+          label="Cards Due Today"
+          note="Keep your streak!"
+          tone="orange"
+          value={Math.max(savedCount, 12)}
+        />
+        <DashboardStat
+          icon="flame"
+          label="Study Streak"
+          note="days in a row"
+          tone="purple"
+          value={7}
+        />
       </section>
 
       <div className="dashboard-grid">
@@ -376,24 +434,29 @@ function Dashboard({
         <section className="dashboard-stack">
           <article className="dashboard-card">
             <h3>Quick Actions</h3>
-            <div className="quick-grid">
+            <div className="quick-grid quick-grid-compact">
               <button className="quick-action blue" onClick={onImport} type="button">
                 <span>Import File</span>
                 <small>PDF, Markdown, Text, Code</small>
-              </button>
-              <button className="quick-action amber" onClick={onGenerate} type="button">
-                <span>Create Flashcard</span>
-                <small>Make a card manually</small>
-              </button>
-              <button className="quick-action violet" onClick={onGenerate} type="button">
-                <span>Generate Cards</span>
-                <small>Draft from your notes</small>
               </button>
               <button className="quick-action green" onClick={onReview} type="button">
                 <span>Start Review</span>
                 <small>Review due cards</small>
               </button>
             </div>
+          </article>
+
+          <article className="dashboard-card create-flashcard-card">
+            <div>
+              <h3>Create Flashcard</h3>
+              <p>
+                Pick a document first, then CardSmith will guide you through the
+                card creation process.
+              </p>
+            </div>
+            <button className="primary-action" onClick={onImport} type="button">
+              Import source
+            </button>
           </article>
 
           <article className="dashboard-card getting-started">
@@ -424,11 +487,13 @@ function DashboardStat({
   value,
   note,
   icon,
+  tone,
 }: {
   label: string;
   value: number;
   note: string;
-  icon: string;
+  icon: "document" | "cards" | "calendar" | "flame";
+  tone: "green" | "blue" | "orange" | "purple";
 }) {
   return (
     <article className="dashboard-stat">
@@ -437,8 +502,152 @@ function DashboardStat({
         <strong>{value}</strong>
         <small>{note}</small>
       </div>
-      <span className="stat-icon">{icon}</span>
+      <span className={`stat-icon ${tone}`}>
+        <StatIcon name={icon} />
+      </span>
     </article>
+  );
+}
+
+function StatIcon({ name }: { name: "document" | "cards" | "calendar" | "flame" }) {
+  if (name === "document") {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M7 3h7l4 4v14H7z" />
+        <path d="M14 3v5h5" />
+        <path d="M10 12h6M10 16h6" />
+      </svg>
+    );
+  }
+
+  if (name === "cards") {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M6 5h13v9H6z" />
+        <path d="M5 9h13v9H5z" />
+      </svg>
+    );
+  }
+
+  if (name === "calendar") {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M6 5h12v14H6z" />
+        <path d="M6 9h12" />
+        <path d="M9 3v4M15 3v4" />
+        <path d="M9 13h2M13 13h2M9 16h2" />
+      </svg>
+    );
+  }
+
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M13 3c1 4-3 5-3 8 0 1.4.9 2.4 2.2 2.4 1.7 0 2.8-1.5 2.2-3.5 2.4 1.5 3.6 3.5 3.6 5.7 0 3-2.5 5.4-6 5.4s-6-2.4-6-5.5c0-2.6 1.5-4.8 3.3-6.6C10.8 7.5 12.3 6 13 3Z" />
+    </svg>
+  );
+}
+
+function GenerationSettingsPanel({
+  settings,
+  onChange,
+  onGenerate,
+}: {
+  settings: GenerationSettings;
+  onChange: (settings: GenerationSettings) => void;
+  onGenerate: () => void;
+}) {
+  function updateCardType(
+    key: keyof GenerationSettings["cardTypes"],
+    value: boolean,
+  ) {
+    onChange({
+      ...settings,
+      cardTypes: {
+        ...settings.cardTypes,
+        [key]: value,
+      },
+    });
+  }
+
+  return (
+    <section className="generation-settings">
+      <div>
+        <div className="section-label">Generation Settings</div>
+        <h2>Customize draft cards</h2>
+      </div>
+
+      <fieldset>
+        <legend>Number of cards</legend>
+        {(["Auto", "10", "25", "50"] as const).map((count) => (
+          <label key={count}>
+            <input
+              checked={settings.cardCount === count}
+              name="card-count"
+              onChange={() => onChange({ ...settings, cardCount: count })}
+              type="radio"
+            />
+            {count}
+          </label>
+        ))}
+      </fieldset>
+
+      <fieldset>
+        <legend>Difficulty</legend>
+        {(["Basic", "Medium", "Advanced"] as const).map((difficulty) => (
+          <label key={difficulty}>
+            <input
+              checked={settings.difficulty === difficulty}
+              name="difficulty"
+              onChange={() => onChange({ ...settings, difficulty })}
+              type="radio"
+            />
+            {difficulty}
+          </label>
+        ))}
+      </fieldset>
+
+      <fieldset>
+        <legend>Card type</legend>
+        <label>
+          <input
+            checked={settings.cardTypes.definition}
+            onChange={(event) => updateCardType("definition", event.currentTarget.checked)}
+            type="checkbox"
+          />
+          Definition
+        </label>
+        <label>
+          <input
+            checked={settings.cardTypes.concept}
+            onChange={(event) => updateCardType("concept", event.currentTarget.checked)}
+            type="checkbox"
+          />
+          Concept
+        </label>
+        <label>
+          <input
+            checked={settings.cardTypes.questionAnswer}
+            onChange={(event) =>
+              updateCardType("questionAnswer", event.currentTarget.checked)
+            }
+            type="checkbox"
+          />
+          Question Answer
+        </label>
+        <label>
+          <input
+            checked={settings.cardTypes.formula}
+            onChange={(event) => updateCardType("formula", event.currentTarget.checked)}
+            type="checkbox"
+          />
+          Formula
+        </label>
+      </fieldset>
+
+      <button className="primary-button" onClick={onGenerate} type="button">
+        Generate Cards
+      </button>
+    </section>
   );
 }
 
@@ -483,27 +692,38 @@ function ProcessingExperience({
   );
 }
 
-function buildDraftCards(importedFile: ImportedFile): Flashcard[] {
+function buildDraftCards(
+  importedFile: ImportedFile,
+  settings: GenerationSettings,
+): Flashcard[] {
   const sentences = splitIntoSentences(importedFile.preview);
   const source = importedFile.name;
+  const requestedCount =
+    settings.cardCount === "Auto" ? 4 : Number.parseInt(settings.cardCount, 10);
   const firstCard: Flashcard = {
     id: makeCardId(source, 0),
     ...importedFile.card,
-    tags: [importedFile.kind],
-    difficulty: "Medium",
+    tags: buildTags(importedFile.kind, settings),
+    difficulty: mapDifficulty(settings.difficulty),
     created: "Today",
   };
-  const extraCards = sentences.slice(1, 4).map((sentence, index) => ({
+  const extraCards = sentences.slice(1, requestedCount).map((sentence, index) => ({
     id: makeCardId(source, index + 1),
-    question: makeQuestion(source, importedFile.kind, sentence, index + 1),
+    question: makeQuestion(
+      source,
+      importedFile.kind,
+      sentence,
+      index + 1,
+      settings,
+    ),
     answer: sentence,
     source,
-    tags: [importedFile.kind],
-    difficulty: "Medium" as const,
+    tags: buildTags(importedFile.kind, settings),
+    difficulty: mapDifficulty(settings.difficulty),
     created: "Today",
   }));
 
-  return [firstCard, ...extraCards].slice(0, 4);
+  return [firstCard, ...extraCards].slice(0, requestedCount);
 }
 
 function splitIntoSentences(text: string): string[] {
@@ -521,10 +741,32 @@ function makeQuestion(
   kind: string,
   sentence: string,
   index: number,
+  settings?: GenerationSettings,
 ) {
   if (kind === "Code") return `What does this section of ${source} do?`;
+  if (settings?.cardTypes.formula && /[=+\-*/∑√π]/.test(sentence)) {
+    return `What formula appears in ${source}?`;
+  }
+  if (settings?.cardTypes.definition && sentence.includes(":")) {
+    return `What does this note from ${source} define?`;
+  }
   if (sentence.includes(":")) return `What does this note from ${source} define?`;
   return `What is idea ${index + 1} from ${source}?`;
+}
+
+function buildTags(kind: string, settings: GenerationSettings) {
+  return [
+    kind,
+    ...Object.entries(settings.cardTypes)
+      .filter(([, enabled]) => enabled)
+      .map(([type]) => type),
+  ];
+}
+
+function mapDifficulty(difficulty: GenerationSettings["difficulty"]) {
+  if (difficulty === "Basic") return "Easy" as const;
+  if (difficulty === "Advanced") return "Hard" as const;
+  return "Medium" as const;
 }
 
 function makeCardId(source: string, index: number) {

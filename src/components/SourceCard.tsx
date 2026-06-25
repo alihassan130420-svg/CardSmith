@@ -15,17 +15,17 @@ export function SourceCard({
 }: SourceCardProps) {
   if (!file) {
     return (
-      <section className="empty-state">
-        <h2>Welcome to CardSmith</h2>
-        <p>Turn PDFs, Markdown, text, and code files into study flashcards.</p>
-        <div className="file-types">
-          <span>PDF</span>
-          <span>Markdown</span>
-          <span>Text</span>
-          <span>Code</span>
+      <section className="empty-source-card">
+        <div className="empty-source-icon" aria-hidden="true">
+          📄
         </div>
+        <h2>No sources yet</h2>
+        <p>
+          Import your first document and CardSmith will help turn it into
+          flashcards.
+        </p>
         <button className="primary-button" onClick={onImport} type="button">
-          Import File
+          + Import File
         </button>
       </section>
     );
@@ -38,7 +38,11 @@ export function SourceCard({
         <span className="file-token">{file.kind}</span>
         <div>
           <h2>{file.name}</h2>
-          <small>{draftCount} draft cards created</small>
+          <small>
+            {sourceMeta(file)}
+            {" · "}
+            {draftCount} draft cards created
+          </small>
         </div>
       </div>
       <div className="source-actions">
@@ -54,4 +58,12 @@ export function SourceCard({
       </div>
     </section>
   );
+}
+
+function sourceMeta(file: ImportedFile) {
+  if (file.metadata.page_count) {
+    return `${file.metadata.page_count} pages`;
+  }
+
+  return `${file.metadata.extracted_characters.toLocaleString()} characters`;
 }

@@ -4,25 +4,23 @@ import cardSmithMark from "../assets/cardsmith-mark.png";
 type SidebarProps = {
   currentPage: AppPage;
   onPageChange: (page: AppPage) => void;
-  sourceCount: number;
-  draftCount: number;
+  onStartReview: () => void;
   savedCount: number;
 };
 
-const navGroups: AppPage[] = [
-  "Library",
-  "Sources",
-  "Cards",
-  "Review",
-  "Progress",
-  "Settings",
+const navGroups: Array<{ label: AppPage; icon: string }> = [
+  { label: "Library", icon: "\u{1F4DA}" },
+  { label: "Sources", icon: "\u{1F4C4}" },
+  { label: "Cards", icon: "\u{1F0CF}" },
+  { label: "Review", icon: "\u{1F3AF}" },
+  { label: "Progress", icon: "\u{1F4CA}" },
+  { label: "Settings", icon: "\u2699" },
 ];
 
 export function Sidebar({
   currentPage,
   onPageChange,
-  sourceCount,
-  draftCount,
+  onStartReview,
   savedCount,
 }: SidebarProps) {
   return (
@@ -40,30 +38,27 @@ export function Sidebar({
       <nav className="sidebar-nav" aria-label="Main navigation">
         {navGroups.map((group) => (
           <button
-            className={group === currentPage ? "nav-group active" : "nav-group"}
-            key={group}
-            onClick={() => onPageChange(group)}
+            className={group.label === currentPage ? "nav-group active" : "nav-group"}
+            key={group.label}
+            onClick={() => onPageChange(group.label)}
             type="button"
           >
-            <span>{group}</span>
+            <span className="nav-icon" aria-hidden="true">
+              {group.icon}
+            </span>
+            <span>{group.label}</span>
           </button>
         ))}
       </nav>
 
-      <div className="sidebar-stats">
-        <div>
-          <span>Sources</span>
-          <strong>{sourceCount}</strong>
-        </div>
-        <div>
-          <span>Drafts</span>
-          <strong>{draftCount}</strong>
-        </div>
-        <div>
-          <span>Saved</span>
-          <strong>{savedCount}</strong>
-        </div>
-      </div>
+      <section className="today-card">
+        <span>Today</span>
+        <small>Reviews Due</small>
+        <strong>{Math.max(savedCount, 12)}</strong>
+        <button className="primary-button" onClick={onStartReview} type="button">
+          Start Review
+        </button>
+      </section>
 
       <div className="storage-card">
         <strong>Local storage active</strong>

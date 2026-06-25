@@ -6,6 +6,7 @@ struct ImportedFile {
     name: String,
     kind: String,
     preview: String,
+    metadata: SourceMetadata,
     card: Flashcard,
 }
 
@@ -14,6 +15,13 @@ struct Flashcard {
     question: String,
     answer: String,
     source: String,
+}
+
+#[derive(Serialize)]
+struct SourceMetadata {
+    page_count: Option<usize>,
+    extracted_characters: usize,
+    extraction_method: &'static str,
 }
 
 #[tauri::command]
@@ -38,19 +46,32 @@ fn import_study_file(path: String) -> Result<ImportedFile, String> {
     }
     .to_string();
 
-    let raw_text = if extension == "pdf" {
-        "This PDF source was imported into CardSmith. Add a short summary or key idea here, then save it as a study card."
-            .to_string()
+    let extracted = if extension == "pdf" {
+        extract_pdf_text(&path)?
     } else {
-        fs::read_to_string(&path).map_err(|error| {
+        let raw_text = fs::read_to_string(&path).map_err(|error| {
             format!(
                 "CardSmith could not read this file as plain text yet: {}",
                 error
             )
-        })?
+        })?;
+
+        ExtractedSource {
+            text: raw_text,
+            page_count: None,
+            extraction_method: "plain-text",
+        }
     };
 
-    let cleaned_text = normalize_text(&raw_text);
+    let cleaned_text = normalize_text(&extracted.text);
+    let extracted_characters = cleaned_text.chars().count();
+    if extracted_characters < 24 {
+        return Err(format!(
+            "CardSmith imported {}, but could not find enough readable text to create flashcards.",
+            name
+        ));
+    }
+
     let preview = cleaned_text.chars().take(900).collect::<String>();
     let answer = best_answer(&cleaned_text);
     let question = build_question(&name, &kind, &answer);
@@ -59,11 +80,49 @@ fn import_study_file(path: String) -> Result<ImportedFile, String> {
         name: name.clone(),
         kind,
         preview,
+        metadata: SourceMetadata {
+            page_count: extracted.page_count,
+            extracted_characters,
+            extraction_method: extracted.extraction_method,
+        },
         card: Flashcard {
             question,
             answer,
             source: name,
         },
+    })
+}
+
+struct ExtractedSource {
+    text: String,
+    page_count: Option<usize>,
+    extraction_method: &'static str,
+}
+
+fn extract_pdf_text(path: &PathBuf) -> Result<ExtractedSource, String> {
+    let page_count = lopdf::Document::load(path)
+        .map(|document| document.get_pages().len())
+        .ok();
+
+    let text = pdf_extract::extract_text(path).map_err(|error| {
+        format!(
+            "CardSmith could not extract text from this PDF. If it is scanned or image-only, OCR support will be needed. Details: {}",
+            error
+        )
+    })?;
+
+    let cleaned = normalize_text(&text);
+    if cleaned.chars().count() < 24 {
+        return Err(
+            "CardSmith opened this PDF, but it appears to be scanned or image-only. Text-based PDFs are supported now; OCR can be added next."
+                .to_string(),
+        );
+    }
+
+    Ok(ExtractedSource {
+        text,
+        page_count,
+        extraction_method: "pdf-text",
     })
 }
 

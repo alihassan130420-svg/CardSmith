@@ -4,7 +4,6 @@ export type AppTheme =
   | "Calm Study"
   | "Midnight Focus"
   | "Paper Notes"
-  | "Ocean Blue"
   | "Reading Mode";
 
 export type Flashcard = {
@@ -21,5 +20,10 @@ export type ImportedFile = {
   name: string;
   kind: string;
   preview: string;
+  metadata: {
+    page_count: number | null;
+    extracted_characters: number;
+    extraction_method: string;
+  };
   card: Omit<Flashcard, "id" | "tags" | "difficulty" | "created">;
 };

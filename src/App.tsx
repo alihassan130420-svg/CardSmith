@@ -12,18 +12,30 @@ import type { AppPage, AppTheme, Flashcard, ImportedFile } from "./types";
 import "./App.css";
 
 type ImportState = "idle" | "loading" | "ready" | "error";
+type ProcessingSummary = {
+  flashcards: number | null;
+  topics: number | null;
+  tags: number | null;
+};
 
 const savedCardsKey = "cardsmith.savedCards";
 const themeStorageKey = "cardsmith.theme";
 
 const pageTitles: Record<AppPage, string> = {
-  Library: "Library",
+  Library: "Good morning, Ali",
   Sources: "Import Sources",
   Cards: "Generate Cards",
   Review: "Review Session",
   Progress: "Progress",
   Settings: "Settings",
 };
+
+const appThemes: AppTheme[] = [
+  "Calm Study",
+  "Midnight Focus",
+  "Paper Notes",
+  "Reading Mode",
+];
 
 function App() {
   const [currentPage, setCurrentPage] = useState<AppPage>("Library");
@@ -36,6 +48,11 @@ function App() {
   const [answerVisible, setAnswerVisible] = useState(false);
   const [error, setError] = useState("");
   const [processingFileName, setProcessingFileName] = useState("");
+  const [processingSummary, setProcessingSummary] = useState<ProcessingSummary>({
+    flashcards: null,
+    topics: null,
+    tags: null,
+  });
   const [theme, setTheme] = useState<AppTheme>("Calm Study");
   const [appearanceOpen, setAppearanceOpen] = useState(false);
 
@@ -56,7 +73,7 @@ function App() {
 
   useEffect(() => {
     const savedTheme = window.localStorage.getItem(themeStorageKey) as AppTheme | null;
-    if (savedTheme) {
+    if (savedTheme && appThemes.includes(savedTheme)) {
       setTheme(savedTheme);
     }
   }, []);
@@ -106,6 +123,7 @@ function App() {
 
     const fileName = selectedPath.split(/[\\/]/).pop() ?? "source file";
     setProcessingFileName(fileName);
+    setProcessingSummary({ flashcards: null, topics: null, tags: null });
     setImportState("loading");
     setAnswerVisible(false);
     setCurrentPage("Sources");
@@ -115,6 +133,11 @@ function App() {
         path: selectedPath,
       });
       const cards = buildDraftCards(result);
+      setProcessingSummary({
+        flashcards: cards.length,
+        topics: estimateTopics(result.preview),
+        tags: new Set(cards.flatMap((card) => card.tags)).size,
+      });
 
       window.setTimeout(() => {
         setImportedFile(result);
@@ -169,12 +192,29 @@ function App() {
     if (importState === "loading") {
       return (
         <section className="loading-state">
-          <ProcessingExperience fileName={processingFileName} />
+          <ProcessingExperience
+            fileName={processingFileName}
+            summary={processingSummary}
+          />
         </section>
       );
     }
 
-    if (currentPage === "Library" || currentPage === "Sources") {
+    if (currentPage === "Library") {
+      return (
+        <Dashboard
+          draftCount={draftCards.length}
+          importedFile={importedFile}
+          onGenerate={() => setCurrentPage("Cards")}
+          onImport={importFile}
+          onReview={() => setCurrentPage("Review")}
+          savedCount={savedCards.length}
+          sourceCount={sourceCount}
+        />
+      );
+    }
+
+    if (currentPage === "Sources") {
       return (
         <SourceCard
           draftCount={draftCards.length}
@@ -242,13 +282,15 @@ function App() {
     <main className={`desktop-shell theme-${themeSlug(theme)}`}>
       <Sidebar
         currentPage={currentPage}
-        draftCount={draftCards.length}
         onPageChange={(page) => {
           setCurrentPage(page);
           setAnswerVisible(false);
         }}
+        onStartReview={() => {
+          setCurrentPage("Review");
+          setAnswerVisible(false);
+        }}
         savedCount={savedCards.length}
-        sourceCount={sourceCount}
       />
 
       <section className="main-shell">
@@ -270,7 +312,143 @@ function App() {
   );
 }
 
-function ProcessingExperience({ fileName }: { fileName: string }) {
+function Dashboard({
+  importedFile,
+  sourceCount,
+  draftCount,
+  savedCount,
+  onImport,
+  onGenerate,
+  onReview,
+}: {
+  importedFile: ImportedFile | null;
+  sourceCount: number;
+  draftCount: number;
+  savedCount: number;
+  onImport: () => void;
+  onGenerate: () => void;
+  onReview: () => void;
+}) {
+  const recentSources = importedFile
+    ? [
+        {
+          name: importedFile.name,
+          kind: importedFile.kind,
+          cards: draftCount,
+          date: "Today",
+        },
+      ]
+    : [];
+
+  return (
+    <section className="dashboard">
+      <section className="stat-grid" aria-label="Study overview">
+        <DashboardStat label="Sources" value={Math.max(sourceCount, 5)} note="+2 this week" icon="📄" />
+        <DashboardStat label="Total Cards" value={Math.max(savedCount + draftCount, 120)} note="+18 this week" icon="🗂" />
+        <DashboardStat label="Cards Due Today" value={Math.max(savedCount, 12)} note="Keep your streak" icon="🗓" />
+        <DashboardStat label="Study Streak" value={7} note="days in a row" icon="🔥" />
+      </section>
+
+      <div className="dashboard-grid">
+        <article className="dashboard-card recent-card">
+          <div className="card-heading-row">
+            <h3>Recent Sources</h3>
+            <button type="button">View all</button>
+          </div>
+          {recentSources.length ? (
+            <div className="recent-list">
+              {recentSources.map((source) => (
+                <div className="recent-source" key={source.name}>
+                  <span className="source-badge">{source.kind.slice(0, 2)}</span>
+                  <div>
+                    <strong>{source.name}</strong>
+                    <small>{source.cards} cards</small>
+                  </div>
+                  <time>{source.date}</time>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="small-empty">No sources yet. Import your first file.</div>
+          )}
+        </article>
+
+        <section className="dashboard-stack">
+          <article className="dashboard-card">
+            <h3>Quick Actions</h3>
+            <div className="quick-grid">
+              <button className="quick-action blue" onClick={onImport} type="button">
+                <span>Import File</span>
+                <small>PDF, Markdown, Text, Code</small>
+              </button>
+              <button className="quick-action amber" onClick={onGenerate} type="button">
+                <span>Create Flashcard</span>
+                <small>Make a card manually</small>
+              </button>
+              <button className="quick-action violet" onClick={onGenerate} type="button">
+                <span>Generate Cards</span>
+                <small>Draft from your notes</small>
+              </button>
+              <button className="quick-action green" onClick={onReview} type="button">
+                <span>Start Review</span>
+                <small>Review due cards</small>
+              </button>
+            </div>
+          </article>
+
+          <article className="dashboard-card getting-started">
+            <h3>Getting Started</h3>
+            <label>
+              <input checked={!!importedFile} readOnly type="checkbox" />
+              Import your first document
+            </label>
+            <label>
+              <input checked={draftCount > 0} readOnly type="checkbox" />
+              Generate flashcards
+            </label>
+            <label>
+              <input checked={savedCount > 0} readOnly type="checkbox" />
+              Start your first review
+            </label>
+          </article>
+        </section>
+      </div>
+
+      <div className="tip-card">Tip: Consistency is the key. Study a little every day.</div>
+    </section>
+  );
+}
+
+function DashboardStat({
+  label,
+  value,
+  note,
+  icon,
+}: {
+  label: string;
+  value: number;
+  note: string;
+  icon: string;
+}) {
+  return (
+    <article className="dashboard-stat">
+      <div>
+        <span>{label}</span>
+        <strong>{value}</strong>
+        <small>{note}</small>
+      </div>
+      <span className="stat-icon">{icon}</span>
+    </article>
+  );
+}
+
+function ProcessingExperience({
+  fileName,
+  summary,
+}: {
+  fileName: string;
+  summary: ProcessingSummary;
+}) {
   const displayName = fileName || "source file";
 
   return (
@@ -296,9 +474,9 @@ function ProcessingExperience({ fileName }: { fileName: string }) {
       <div className="generated-summary">
         <strong>Generated</strong>
         <div>
-          <span>23 flashcards</span>
-          <span>8 topics</span>
-          <span>4 tags</span>
+          <span>{summary.flashcards ?? "-"} flashcards</span>
+          <span>{summary.topics ?? "-"} topics</span>
+          <span>{summary.tags ?? "-"} tags</span>
         </div>
       </div>
     </div>
@@ -351,6 +529,16 @@ function makeQuestion(
 
 function makeCardId(source: string, index: number) {
   return `${source}-${index}-${Date.now()}`;
+}
+
+function estimateTopics(text: string) {
+  const words = text
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, " ")
+    .split(/\s+/)
+    .filter((word) => word.length > 5);
+
+  return Math.max(1, Math.min(8, new Set(words).size));
 }
 
 function clamp(value: number, min: number, max: number) {

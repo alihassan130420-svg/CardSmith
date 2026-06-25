@@ -16,7 +16,6 @@ const themes: Array<{
   { name: "Calm Study", description: "Clean academic workspace" },
   { name: "Midnight Focus", description: "Dark study mode" },
   { name: "Paper Notes", description: "Digital notebook feel" },
-  { name: "Ocean Blue", description: "Modern technology palette" },
   { name: "Reading Mode", description: "Warm eye-comfort palette" },
 ];
 
@@ -32,7 +31,7 @@ export function TopBar({
     <header className="topbar">
       <div>
         <h1>{title}</h1>
-        <small>Import notes, generate cards, then study offline.</small>
+        <small>Ready to learn something new today?</small>
       </div>
       <div className="topbar-actions">
         <button className="icon-button" aria-label="Search" type="button">

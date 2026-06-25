@@ -2,7 +2,8 @@ import type { Flashcard } from "../types";
 
 type ReviewCardProps = {
   card: Flashcard | null;
-  remaining: number;
+  currentIndex: number;
+  totalCards: number;
   completePercent: number;
   answerVisible: boolean;
   onToggleAnswer: () => void;
@@ -11,7 +12,8 @@ type ReviewCardProps = {
 
 export function ReviewCard({
   card,
-  remaining,
+  currentIndex,
+  totalCards,
   completePercent,
   answerVisible,
   onToggleAnswer,
@@ -31,8 +33,16 @@ export function ReviewCard({
   return (
     <section className="review-screen">
       <div className="review-header">
-        <h2>Review Session</h2>
-        <span>{remaining} cards remaining</span>
+        <div>
+          <span>Source</span>
+          <strong>{card.source}</strong>
+        </div>
+        <div>
+          <span>Total Cards</span>
+          <strong>
+            {currentIndex} of {totalCards}
+          </strong>
+        </div>
       </div>
 
       <article className="review-card">

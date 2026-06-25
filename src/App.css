@@ -35,7 +35,7 @@ body,
 
 body {
   margin: 0;
-  min-width: 1280px;
+  min-width: 1024px;
 }
 
 button,
@@ -61,7 +61,8 @@ button {
   display: grid;
   grid-template-columns: 220px minmax(0, 1fr);
   width: 100%;
-  height: 100%;
+  height: 100vh;
+  max-height: 100vh;
   overflow: hidden;
   color: var(--text);
   background: var(--background);
@@ -106,9 +107,11 @@ button {
 .sidebar {
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 14px;
+  height: 100vh;
   min-height: 0;
-  padding: 20px 14px;
+  overflow: hidden;
+  padding: 16px 14px;
   border-right: 1px solid #E5E7EB;
   background: #ffffff;
 }
@@ -166,6 +169,7 @@ button {
 .sidebar-nav {
   display: grid;
   gap: 4px;
+  min-height: 0;
   overflow: auto;
 }
 
@@ -227,6 +231,7 @@ button {
 
 .storage-card {
   margin-top: auto;
+  flex-shrink: 0;
   padding: 13px;
   border: 1px solid #E5E7EB;
   border-radius: 12px;
@@ -243,6 +248,7 @@ button {
   display: grid;
   gap: 8px;
   margin-top: auto;
+  flex-shrink: 0;
   padding: 14px;
   border: 1px solid var(--border);
   border-radius: 14px;
@@ -274,9 +280,11 @@ button {
 
 .main-shell {
   display: grid;
-  grid-template-rows: 68px auto 1fr;
+  grid-template-rows: 68px auto minmax(0, 1fr);
   min-width: 0;
   min-height: 0;
+  height: 100vh;
+  overflow: hidden;
 }
 
 .topbar {
@@ -405,21 +413,26 @@ button {
 }
 
 .content-shell {
+  height: 100%;
   min-height: 0;
-  padding: 20px 24px 24px;
+  padding: 16px 20px 18px;
   overflow: auto;
 }
 
 .dashboard {
   display: grid;
-  gap: 16px;
-  max-width: 1040px;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 14px;
+  width: 100%;
+  max-width: 1160px;
+  min-height: 100%;
+  margin: 0 auto;
 }
 
 .stat-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 14px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
 }
 
 .dashboard-stat,
@@ -435,8 +448,8 @@ button {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  min-height: 136px;
-  padding: 22px;
+  min-height: clamp(104px, 16vh, 128px);
+  padding: 18px;
 }
 
 .dashboard-stat span:first-child {
@@ -447,14 +460,14 @@ button {
 
 .dashboard-stat strong {
   display: block;
-  margin-top: 8px;
-  font-size: 34px;
+  margin-top: 6px;
+  font-size: 32px;
   line-height: 1;
 }
 
 .dashboard-stat small {
   display: block;
-  margin-top: 9px;
+  margin-top: 7px;
   color: var(--secondary-text);
   font-size: 12px;
   font-weight: 700;
@@ -506,12 +519,14 @@ button {
 
 .dashboard-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(340px, 0.9fr);
-  gap: 16px;
+  grid-template-columns: minmax(420px, 1fr) minmax(320px, 0.82fr);
+  gap: 14px;
+  min-height: 0;
 }
 
 .dashboard-card {
-  padding: 18px;
+  min-height: 0;
+  padding: 16px;
 }
 
 .dashboard-card h3 {
@@ -524,7 +539,7 @@ button {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: 14px;
+  margin-bottom: 12px;
 }
 
 .card-heading-row button {
@@ -535,11 +550,22 @@ button {
   font-weight: 850;
 }
 
+.recent-card {
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
+}
+
 .recent-list,
 .dashboard-stack,
 .getting-started {
   display: grid;
-  gap: 12px;
+  gap: 10px;
+}
+
+.recent-list {
+  min-height: 0;
+  overflow: auto;
 }
 
 .recent-source {
@@ -576,7 +602,8 @@ button {
 
 .small-empty {
   display: grid;
-  min-height: 170px;
+  flex: 1;
+  min-height: 132px;
   place-items: center;
   border: 1px dashed var(--border);
   border-radius: 12px;
@@ -586,18 +613,18 @@ button {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 10px;
-  margin-top: 14px;
+  margin-top: 12px;
 }
 
 .quick-grid-compact .quick-action {
-  min-height: 86px;
+  min-height: 74px;
 }
 
 .quick-action {
   display: grid;
   gap: 4px;
-  min-height: 72px;
-  padding: 14px;
+  min-height: 68px;
+  padding: 12px;
   border: 1px solid var(--border);
   border-radius: 12px;
   color: var(--text);
@@ -635,7 +662,7 @@ button {
   display: grid;
   grid-template-columns: 1fr auto;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
 }
 
 .create-flashcard-card p {
@@ -643,7 +670,7 @@ button {
   margin: 8px 0 0;
   color: var(--secondary-text);
   font-size: 13px;
-  line-height: 1.6;
+  line-height: 1.45;
 }
 
 .primary-action {
@@ -676,10 +703,60 @@ button {
 
 .tip-card {
   max-width: 440px;
-  padding: 13px 16px;
+  padding: 11px 14px;
   color: var(--secondary-text);
   background: color-mix(in srgb, var(--light-accent) 45%, var(--card));
   font-size: 13px;
+}
+
+@media (max-height: 820px) {
+  .topbar {
+    padding: 0 20px;
+  }
+
+  .content-shell {
+    padding-block: 14px;
+  }
+
+  .dashboard {
+    gap: 12px;
+  }
+
+  .dashboard-stat {
+    min-height: 100px;
+    padding: 16px;
+  }
+
+  .dashboard-card {
+    padding: 14px;
+  }
+
+  .small-empty {
+    min-height: 118px;
+  }
+
+  .tip-card {
+    padding-block: 9px;
+  }
+}
+
+@media (max-width: 1280px) {
+  .desktop-shell {
+    grid-template-columns: 208px minmax(0, 1fr);
+  }
+
+  .dashboard-grid {
+    grid-template-columns: minmax(360px, 1fr) minmax(300px, 0.78fr);
+  }
+
+  .topbar-actions {
+    gap: 6px;
+  }
+
+  .topbar .primary-button,
+  .topbar .icon-button {
+    padding: 0 11px;
+  }
 }
 
 .empty-state,
@@ -805,7 +882,6 @@ button {
 
 .empty-state h2,
 .loading-state h2,
-.review-header h2,
 .panel h2 {
   margin: 0;
   font-size: 22px;
@@ -1117,26 +1193,64 @@ button {
 
 .review-screen {
   display: grid;
-  grid-template-rows: auto 1fr auto auto;
+  grid-template-rows: auto auto auto auto;
   gap: 16px;
-  max-width: 720px;
-  height: 100%;
+  align-content: start;
+  max-width: 1080px;
   margin: 0 auto;
+}
+
+.review-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  width: min(100%, 340px);
+  justify-self: center;
+}
+
+.review-header div {
+  display: grid;
+  gap: 4px;
+}
+
+.review-header div:last-child {
+  text-align: right;
+}
+
+.review-header span {
+  color: var(--secondary-text);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.review-header strong {
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 900;
 }
 
 .review-card {
   align-content: center;
   justify-items: center;
+  justify-self: center;
+  width: min(100%, 340px);
+  min-height: 260px;
   text-align: center;
 }
 
 .difficulty-row {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
+  width: min(100%, 340px);
+  justify-self: center;
 }
 
 .progress-bar {
   height: 10px;
+  width: min(100%, 340px);
+  justify-self: center;
   overflow: hidden;
   border-radius: 999px;
   background: #E5E7EB;

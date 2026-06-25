@@ -1,4 +1,4 @@
-export type AppPage = "Library" | "Sources" | "Cards" | "Review" | "Progress" | "Settings";
+export type AppPage = "Library" | "Sources" | "Cards" | "Review" | "Progress";
 
 export type AppTheme =
   | "Calm Study"

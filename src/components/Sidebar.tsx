@@ -14,7 +14,6 @@ const navGroups: Array<{ label: AppPage; icon: string }> = [
   { label: "Cards", icon: "\u{1F0CF}" },
   { label: "Review", icon: "\u{1F3AF}" },
   { label: "Progress", icon: "\u{1F4CA}" },
-  { label: "Settings", icon: "\u2699" },
 ];
 
 export function Sidebar({
@@ -51,14 +50,16 @@ export function Sidebar({
         ))}
       </nav>
 
-      <section className="today-card">
-        <span>Today</span>
-        <small>Reviews Due</small>
-        <strong>{Math.max(savedCount, 12)}</strong>
-        <button className="primary-button" onClick={onStartReview} type="button">
-          Start Review
-        </button>
-      </section>
+      {currentPage === "Library" ? (
+        <section className="today-card">
+          <span>Today</span>
+          <small>Reviews Due</small>
+          <strong>{Math.max(savedCount, 12)}</strong>
+          <button className="primary-button" onClick={onStartReview} type="button">
+            Start Review
+          </button>
+        </section>
+      ) : null}
 
       <div className="storage-card">
         <strong>Local storage active</strong>

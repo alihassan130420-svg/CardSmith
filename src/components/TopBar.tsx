@@ -67,9 +67,6 @@ export function TopBar({
         <button className="primary-button" onClick={onImport} type="button">
           + Import File
         </button>
-        <button className="icon-button" aria-label="Settings" type="button">
-          Settings
-        </button>
       </div>
     </header>
   );

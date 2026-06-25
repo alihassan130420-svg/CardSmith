@@ -38,7 +38,6 @@ const pageTitles: Record<AppPage, string> = {
   Cards: "Generate Cards",
   Review: "Review Session",
   Progress: "Progress",
-  Settings: "Settings",
 };
 
 const appThemes: AppTheme[] = [
@@ -288,10 +287,15 @@ function App() {
         <ReviewCard
           answerVisible={answerVisible}
           card={reviewCard}
-          completePercent={savedCards.length ? Math.round((reviewIndex / savedCards.length) * 100) : 0}
+          completePercent={
+            savedCards.length
+              ? Math.round(((reviewIndex + 1) / savedCards.length) * 100)
+              : 0
+          }
+          currentIndex={savedCards.length ? reviewIndex + 1 : 0}
           onNext={moveReviewNext}
           onToggleAnswer={() => setAnswerVisible((visible) => !visible)}
-          remaining={Math.max(savedCards.length - reviewIndex, 0)}
+          totalCards={savedCards.length}
         />
       );
     }
@@ -306,12 +310,7 @@ function App() {
       );
     }
 
-    return (
-      <section className="empty-state compact">
-        <h2>Settings</h2>
-        <p>Storage, appearance, and import settings will live here.</p>
-      </section>
-    );
+    return null;
   }
 
   return (
@@ -397,13 +396,6 @@ function Dashboard({
           note="Keep your streak!"
           tone="orange"
           value={Math.max(savedCount, 12)}
-        />
-        <DashboardStat
-          icon="flame"
-          label="Study Streak"
-          note="days in a row"
-          tone="purple"
-          value={7}
         />
       </section>
 
